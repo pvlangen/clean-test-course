@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - lesson-6-complete
+
 jobs:
   function_test:
     runs-on: ubuntu-latest
@@ -12,9 +13,27 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
-      - run: npm install
-      - name: Run functional tests
+
+      - name: Use Node 18 with cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Verify react-scripts present
+        run: |
+          npm ls react-scripts || true
+          test -x node_modules/.bin/react-scripts || (echo "react-scripts missing" && exit 1)
+
+      - name: Run unit tests with coverage (CRA)
+        env:
+          CI: true
         run: npm test -- --coverage --watchAll=false
+
   deploy:
     needs: [function_test]
     runs-on: ubuntu-latest
@@ -23,11 +42,18 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
-      - run: npm install && npm run build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
       - name: Generate deployment package
         run: zip -r deploy.zip build Dockerfile
       - name: '**PLACEHOLDER** Deploy to Elastic Beanstalk'
         run: echo Placeholder for Deployment
+
   security_test:
     needs: [deploy]
     runs-on: ubuntu-latest
@@ -36,19 +62,24 @@ jobs:
         uses: zaproxy/action-baseline@v0.7.0
         with:
           target: 'https://hangryhippo.quantic.host'
+
   acceptance_test:
     needs: [deploy]
     runs-on: ubuntu-latest
     container: cypress/included:10.3.0
     steps:
       - uses: actions/checkout@v4
-      - run: npm install
+
+      - name: Install deps (frontend)
         working-directory: frontend
-      - run: cypress run --config-file=cypress.config.js
+        run: npm ci
+
+      - name: Run Cypress E2E
         working-directory: frontend
+        run: cypress run --config-file=cypress.config.js
+
       - uses: actions/upload-artifact@v4.6.2
         if: always()
         with:
           name: cypress-videos
-          path: frontend/cypress/videos 
- 
+          path: frontend/cypress/videos

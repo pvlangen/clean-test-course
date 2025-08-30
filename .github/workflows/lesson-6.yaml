@@ -12,11 +12,13 @@ jobs:
       run:
         working-directory: frontend
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20.18.1
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json   # <— FIXED
 
       - name: Install deps
         run: npm ci
@@ -39,11 +41,13 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20.18.1     # <— BUMPED TO 20
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json   # <— FIXED
+
       - run: npm ci
       - run: npm run build
       - name: Generate deployment package

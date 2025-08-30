@@ -40,14 +40,15 @@ jobs:
     needs: [deploy]
     runs-on: ubuntu-latest
     container: cypress/included:10.3.0
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+      - run: npm install
+        working-directory: frontend
       - run: cypress run --config-file=cypress.config.js
+        working-directory: frontend
       - uses: actions/upload-artifact@v4.6.2
         if: always()
         with:
           name: cypress-videos
-          path: frontend/cypress/videos
+          path: frontend/cypress/videos 
+ 
